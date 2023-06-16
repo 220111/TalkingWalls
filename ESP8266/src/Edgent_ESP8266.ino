@@ -39,13 +39,74 @@
 
 #include "BlynkEdgent.h"
 
+#define volUpPin D0
+#define volDownPin D1
+#define pPin D6
+
+int vol = 0;
+
+void playPause(){
+  digitalWrite(pPin, LOW);
+  delay(500);
+  digitalWrite(pPin, HIGH);
+}
+
+void resetVolMax(){
+  Serial.println("increasing now");
+  digitalWrite(volUpPin, LOW);
+  delay(6000);
+  digitalWrite(volUpPin, HIGH);
+}
+
+void resetVolMin(){
+  Serial.println("reseting volume");
+  digitalWrite(volDownPin, LOW);
+  delay(6000);
+  digitalWrite(volDownPin, HIGH);
+}
+void volUp(){
+  digitalWrite(volUpPin, LOW);
+  delay(200);
+  digitalWrite(volUpPin, HIGH);
+}
+void volDown(){
+  digitalWrite(volDownPin, LOW);
+  delay(200);
+  digitalWrite(volDownPin, HIGH);
+}
+
+void setVol(int set){
+  if(set == vol){
+    return;
+  }
+  if (vol < set){
+    while(vol < set){
+      vol++;
+      volUp();
+    }
+    return;
+  }
+  else {
+    while(vol > set){
+      vol--;
+      volDown();
+    }
+    return;
+  }
+  
+}
+
+
 
 void setup()
 {
-  Serial.begin(9600);
-  delay(100);
-  Serial.write(0xAA0200AC); // set playing state to STOP
-  Serial.write(0xAA180101); // set looping mode to loop single
+  pinMode(pPin, OUTPUT);
+  pinMode(volDownPin, OUTPUT);
+  pinMode(volUpPin, OUTPUT);
+  digitalWrite(pPin, HIGH);
+  digitalWrite(volDownPin, HIGH);
+  digitalWrite(volUpPin, HIGH);
+  resetVolMin();
   BlynkEdgent.begin();
 }
 
@@ -55,23 +116,18 @@ void loop() {
 
 BLYNK_CONNECTED()
 {
-  Blynk.syncVirtual(V0);  // will cause BLYNK_WRITE(V0) to be executed
-  Blynk.syncVirtual(V1);  // will cause BLYNK_WRITE(V1) to be executed
+  Blynk.syncVirtual(V1);
 }
 
 BLYNK_WRITE(V0) {
   int virtual_pin_value = param.asInt();
   if (virtual_pin_value == 1){
-    Serial.write(0xAA0200AC); // set playing state to PLAY
-  }
-  if (virtual_pin_value == 0){
-    Serial.write(0xAA0200AD); // set playing state to PAUSE
+    playPause(); //toggle the play mode
   }
 }
 
 BLYNK_WRITE(V1){
   int volume = param.asInt(); // volume value 0-30
-  int ret = 0xAA130100 + volume; // command to set volume + desired volume level
-  Serial.write(ret); // send command
+  setVol(volume);
 }
 
